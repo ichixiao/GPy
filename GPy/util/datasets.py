@@ -688,8 +688,9 @@ def hapmap3(data_set='hapmap3'):
         # put everything together:
         status=write_status('setting up snps...', 96, status)
         snpsdf = DataFrame(index=metadf.index, data=snps, columns=mapnp[:,1])
-        with open(preprocessed_data_paths[0], 'wb') as f:
-            pickle.dump(f, snpsdf, protocoll=-1)
+        snpsdf.to_pickle(preprocessed_data_paths[0])
+        #with open(preprocessed_data_paths[0], 'wb') as f:
+        #    pickle.dump(snpsdf, f, protocol=-1)
         status=write_status('setting up snps...', 98, status)
         inandf = DataFrame(index=metadf.index, data=inan, columns=mapnp[:,1])
         inandf.to_pickle(preprocessed_data_paths[2])
