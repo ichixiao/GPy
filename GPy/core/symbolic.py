@@ -280,7 +280,7 @@ class Symbolic_core():
 
         # This step may be unecessary.
         # Not 100% sure if the sub expression elimination is order sensitive. This step orders the list with the 'function' code first and derivatives after.
-        print "Not attempting reordering."
+        print "Not attempting reordering." 
         #self.expression_order, self.expression_list, self.expression_keys = zip(*sorted(zip(self.expression_order, self.expression_list, self.expression_keys)))
 
     def extract_sub_expressions(self, cache_prefix='cache', sub_prefix='sub', prefix='XoXoXoX'):

@@ -22,7 +22,7 @@ class IndMatrix(Matrix, Function):
         if not printer:
             from sympy.printing.str import StrPrinter
             printer = StrPrinter()
-        # Handle zero dimensions:
+        # Handle zero dimensions: 
         if self.rows == 0 or self.cols == 0:
             return 'IndMatrix(%s, %s, [])' % (self.rows, self.cols)
         if self.rows == 1:
