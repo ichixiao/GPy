@@ -16,6 +16,7 @@ except ImportError:
 if sympy_available:
     #These are likelihoods that rely on symbolic.
     from symbolic import Symbolic
+    from ordinal import Ordinal
     from sstudent_t import SstudentT
     from negative_binomial import Negative_binomial
     from skew_normal import Skew_normal

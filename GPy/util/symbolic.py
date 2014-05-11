@@ -3,16 +3,121 @@ import numpy as np
 import sympy as sym
 from sympy import Function, S, oo, I, cos, sin, asin, log, erf, pi, exp, sqrt, sign, gamma, polygamma
 from sympy.matrices import Matrix
+from sympy.core import Derivative
 ########################################
 ## Try to do some matrix functions: problem, you can't do derivatives
 ## with respect to matrix functions :-(
 
-class GPySymMatrix(Matrix):
-    def __init__(self, indices):
-        Matrix.__init__(self)
-    def atoms(self):
-        return [e2 for e in self for e2 in e.atoms()]
+class IndMatrix(Matrix, Function):
+    def __init__(self, rows, cols, expressions, index=0, row_index=0, col_index=0):
+        super(IndMatrix, self).__init__(expressions)
+        self.row_var = row_index
+        self.col_var = col_index
+        self.index_var = index
+    def fdiff(self, argindex=1):
+        base = [sym.sympify(0)]*self.rows*self.cols
+        base[argindex-1] = sym.sympify(1)
+        return IndMatrix(self.rows, self.cols, base, index=self.index_var)
+    def _format_str(self, printer=None):
+        if not printer:
+            from sympy.printing.str import StrPrinter
+            printer = StrPrinter()
+        # Handle zero dimensions:
+        if self.rows == 0 or self.cols == 0:
+            return 'IndMatrix(%s, %s, [])' % (self.rows, self.cols)
+        if self.rows == 1:
+            return "IndMatrix([%s])" % self.table(printer, rowsep=',\n')
+        return "IndMatrix([\n%s])" % self.table(printer, rowsep=',\n')
+
+
         
+    #@_sympifyit('other', NotImplemented)
+    def __add__(self, other):
+        if isinstance(other, Matrix):
+            if other.rows==self.rows and other.rows==self.cols:
+                base = [self[i, j] + other[i, j] for i in range(self.rows) for j in range[self.cols]]
+                return IndMatrix(self.rows, self.cols, base, index=self.index_var)
+        # if isinstance(other, Number):
+        #     if other is S.NaN:
+        #         return S.NaN
+        #     elif other is S.Infinity:
+        #         return S.Infinity
+        #     elif other is S.NegativeInfinity:
+        #         return S.NegativeInfinity
+        # return AtomicExpr.__add__(self, other)
+
+    def __str__(self):
+        if self.rows == 0 or self.cols == 0:
+            return 'IndMatrix(%s, %s, [])' % (self.rows, self.cols)
+        return "IndMatrix(%s)" % str(self.tolist())
+
+    def is_real(self):
+        return True
+
+    def atoms(self, *types):
+        ex_list = [e2 for e in self for e2 in e.atoms(*types)]
+        if hasattr(self, 'row_var') and self.row_var:
+            if isinstance(self.row_var, sym.Expr):
+                ex_list += [e for e in self.row_var.atoms(*types)]
+        if hasattr(self, 'col_var') and self.col_var:
+            if isinstance(self.col_var, sym.Expr):
+                ex_list += [e for e in self.col_var.atoms(*types)]
+        if hasattr(self, 'index_var') and self.index_var:
+            if isinstance(self.index_var, sym.Expr):
+                ex_list += [e for e in self.index_var.atoms(*types)]
+        return ex_list
+
+    @property
+    def free_symbols(self):
+        """Return from the atoms of self those which are free symbols.
+
+        For most expressions, all symbols are free symbols. For some classes
+        this is not true. e.g. Integrals use Symbols for the dummy variables
+        which are bound variables, so Integral has a method to return all symbols
+        except those. Derivative keeps track of symbols with respect to which it
+        will perform a derivative; those are bound variables, too, so it has
+        its own symbols method.
+
+        Any other method that uses bound variables should implement a symbols
+        method."""
+        union = set.union
+        return reduce(union, [e.free_symbols for e in self], set())
+
+    @property
+    def args(self):
+        """Returns a tuple of arguments of 'self'.
+        """
+        return [e for e in self]
+
+    def diff(self, *args):
+        return self._new(self.rows, self.cols,
+                         lambda i, j: self[i, j].diff(*args))
+
+    def sum(self):
+        result = 0
+        for e in self:
+            result+=e
+        return result
+
+    def prod(self):
+        result = 1
+        for e in self:
+            result*=e
+        return result
+
+    def expressions(self):
+        return [expr for expr in self]
+
+def create_matrix(name, rows, cols):
+    """A helper function for creating a matrix based on numbered symbols."""
+    if rows==1:
+        X = IndMatrix(rows, cols, sym.symbols(name.lower() + '_:' + str(cols)))
+    elif cols==1:
+        X = IndMatrix(rows, cols, sym.symbols(name.lower() + '_:' + str(rows)))
+    else:
+        X = IndMatrix(rows, cols, sym.symbols(name.lower() + '_:' + str(rows) + '\,:' + str(cols)))
+    return X
+
 class selector(Function):
     """A function that returns an element of a Matrix depending on input indices."""
     nargs = 3
@@ -105,7 +210,7 @@ class normcdf(Function):
     nargs = 1
     def fdiff(self, argindex=1):
         x = self.args[0]
-        return gaussian(x)
+        return normal(x)
 
     @classmethod
     def eval(cls, x):
